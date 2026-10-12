@@ -29,7 +29,8 @@ N=${#A[@]}
 BL=$((N+4))   # line number of while(1)
 F="-mcpu=18F4520 -mdfp=$DFP -D__DEBUG=1 -O0 -xassembler-with-cpp -std=c99 -gdwarf-3 -mwarn=-3 -mstack=compiled:auto:auto:auto -mno-keep-startup -mno-download -mdefault-config-bits -Wl,--data-init"
 "$XC8" $F main.c count_primes.S -o r.elf > build.log 2>&1 || { echo "BUILD FAIL"; grep -v 1311 build.log | head; exit 1; }
-printf 'Device PIC18F4520\nHwtool Sim\nProgram r.elf\nBreak main.c:%s\nRun\nWait %s\nPrint /d res\nQuit\n' "$BL" "${WAIT_MS:-60000}" > c.txt
+# break on both lines of the while(1) loop: XC8 may map the loop to either one
+printf 'Device PIC18F4520\nHwtool Sim\nProgram r.elf\nBreak main.c:%s\nBreak main.c:%s\nRun\nWait %s\nPrint /d res\nQuit\n' "$BL" "$((BL+1))" "${WAIT_MS:-60000}" > c.txt
 out=$(timeout 900 "$MDB" c.txt 2>&1 | sed -n '/^res=/,/}/p' | tr -d '\n')
 got=($(echo "$out" | grep -o '[0-9]\+'))
 for ((i=0;i<N;i++)); do
