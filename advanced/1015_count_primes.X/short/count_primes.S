@@ -1,39 +1,39 @@
-    // 演算法：分段篩法，只看奇數，每段 255 個
+    // Algorithm: segmented sieve over odd numbers only, 255 numbers per segment
     ;count_primes(n, m):
-	// 1. 先處理邊界
-	;if n < 2: n = 2                          // 0 和 1 不是質數
+	// 1. Edge cases
+	;if n < 2: n = 2                          // 0 and 1 are not prime
 	;if m < n: return 0
 	;count = 0
-	;if n == 2: count = 1                     // 2 是唯一的偶數質數，另外算
+	;if n == 2: count = 1                     // 2 is the only even prime, count it here
 
-	// 2. 只看奇數：奇數 x 的編號 g = (x - 1) / 2，每 255 個編號一段
-	;first = n / 2                            // 第一個 >= n 的奇數的編號
-	;last = (m - 1) / 2                       // 最後一個 <= m 的奇數的編號
-	;if last < first: return count            // [n, m] 裡沒有奇數，例如 (4,4)
+	// 2. Odd numbers only: odd x has index g = (x - 1) / 2, 255 indices per segment
+	;first = n / 2                            // index of the first odd number >= n
+	;last = (m - 1) / 2                       // index of the last odd number <= m
+	;if last < first: return count            // no odd number in [n, m], e.g. (4,4)
 	;seg0 = first / 255 ; idx0 = first % 255  // half_div255
 	;segm = last / 255  ; idxm = last % 255
-	;arr[0 ~ 254] = 0                         // 0 = 可能是質數，0xFF = 合數
-	;if seg0 != segm: arr[0 ~ idx0-1] = 0xFF  // 第一段裡 < n 的先標掉
+	;arr[0 ~ 254] = 0                         // 0 = maybe prime, 0xFF = composite
+	;if seg0 != segm: arr[0 ~ idx0-1] = 0xFF  // numbers below n in the first segment
 
-	// 3. 一段一段篩（segment / add_prime / cross_out）
+	// 3. Sieve one segment at a time (segment / add_prime / cross_out)
 	;for seg = seg0 to segm:
-	;    for p in {3, 5, 7, 11, ..., 251}:    // ptab 一列一個質數
-	;        if p * p 在後面的段: break
-	;        if p 還沒加進 prm[]:
-	;            if p * p 在這一段: next[p] = p * p 的編號 % 255
-	;            else: next[p] = 這一段第一個 p 的奇數倍   // 只有第一段會發生，用乘法算，不用除法
+	;    for p in {3, 5, 7, 11, ..., 251}:    // one row of ptab per prime
+	;        if p * p is in a later segment: break
+	;        if p is not in prm[] yet:
+	;            if p * p is in this segment: next[p] = (index of p * p) % 255
+	;            else: next[p] = first odd multiple of p in this segment   // first segment only, multiply instead of divide
 	;    for p in prm[]:
-	;        for x = next[p]; x < 255; x += p:    // 奇數倍之間差 2p，編號差 p
+	;        for x = next[p]; x < 255; x += p:    // odd multiples are 2p apart, so indices are p apart
 	;            arr[x] = 0xFF
-	;        next[p] = x - 255                    // 下一段從這裡接著標，不用重找起點
+	;        next[p] = x - 255                    // the next segment carries on from here, no new start point
 
-	// 4. 數這一段裡沒被標掉的（count）
-	;    if seg == segm:                          // 最後一段：只數到 m
+	// 4. Count what was not crossed out in this segment (count)
+	;    if seg == segm:                          // last segment: only up to m
 	;        lo = (seg == seg0) ? idx0 : 0
-	;        count += arr[lo ~ idxm] 裡 0 的個數   // 0xFF 加起來 = -(合數個數)
+	;        count += number of 0 in arr[lo ~ idxm]   // the 0xFF entries add up to -(number of composites)
 	;        return count
-	;    count += arr[0 ~ 254] 裡 0 的個數         // < n 的在 2. 已經標掉了
-	;    arr[0 ~ 254] = 0                         // 清掉給下一段用
+	;    count += number of 0 in arr[0 ~ 254]      // numbers below n were crossed out in 2.
+	;    arr[0 ~ 254] = 0                          // clear it for the next segment
     ;return count
 
 ; count_primes.S (short version) -- PIC18F4520, pic-as (XC8 v4.00)
