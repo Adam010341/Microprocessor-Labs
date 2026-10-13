@@ -2,7 +2,7 @@
 """Run count_primes.S in gpsim (no XC8 / MPLAB needed) and check every call.
 
 The pic-as source is converted to gpasm syntax (absolute addresses: params at
-0x10, udata_acs at 0x20, arr at 0x100, udata_bank2 at 0x2A0), wrapped in a
+0x10, udata_acs at 0x20, udata_bankN as far into bank N as fits, up to +0xA0), wrapped in a
 harness that calls count_primes for every (n, m) pair IN ONE RUN, with a
 random BSR / FSR0-2 / PRODL before each call and random RAM at start-up, and
 compared with a Python sieve. Cycles are counted from the CALL to the RETURN
@@ -29,7 +29,7 @@ HANDOFF = [(1, 10), (2, 2), (24, 28), (0, 1), (1, 1), (0, 0), (100, 200), (5, 5)
            (0, 65535), (3, 3), (17, 17), (15, 17), (18, 65535), (200, 100)]
 
 PARAM = 0x10                       # _count_primes$0 (2 bytes), $1 (2 bytes)
-ALLOC = {'udata_acs': 0x20, 'udata_bank1': 0x100, 'udata_bank2': 0x2A0,
+ALLOC = {'udata_acs': 0x20, 'udata_bank1': 0x100, 'udata_bank2': 0x200,
          'udata_bank3': 0x300}
 TABLE = 0x2400                     # test table in flash, 8 bytes per call
 
@@ -54,6 +54,17 @@ def convert(src):
     defs, code = [], []
     psect = None
     alloc = dict(ALLOC)
+    # a bank psect must stay inside its bank: start it as far into the bank
+    # as it can go (up to +0xA0), so offsets inside the bank are not all 0
+    size = {}
+    for m in re.finditer(r'PSECT\s+(\w+)|^\s*\w+:\s*DS\s+(\d+)', src, re.I | re.M):
+        if m.group(1):
+            cur = m.group(1)
+        elif m.group(2):
+            size[cur] = size.get(cur, 0) + int(m.group(2))
+    for k in alloc:
+        if k.startswith('udata_bank'):
+            alloc[k] += min(0xA0, 256 - size.get(k, 0)) if size.get(k, 0) <= 256 else 0
     for line in src.splitlines():
         line = line.rstrip('\r')
         s = line.strip()
