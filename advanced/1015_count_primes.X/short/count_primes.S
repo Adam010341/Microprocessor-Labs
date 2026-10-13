@@ -1,3 +1,41 @@
+    // 演算法：分段篩法，只看奇數，每段 255 個
+    ;count_primes(n, m):
+	// 1. 先處理邊界
+	;if n < 2: n = 2                          // 0 和 1 不是質數
+	;if m < n: return 0
+	;count = 0
+	;if n == 2: count = 1                     // 2 是唯一的偶數質數，另外算
+
+	// 2. 只看奇數：奇數 x 的編號 g = (x - 1) / 2，每 255 個編號一段
+	;first = n / 2                            // 第一個 >= n 的奇數的編號
+	;last = (m - 1) / 2                       // 最後一個 <= m 的奇數的編號
+	;if last < first: return count            // [n, m] 裡沒有奇數，例如 (4,4)
+	;seg0 = first / 255 ; idx0 = first % 255  // half_div255
+	;segm = last / 255  ; idxm = last % 255
+	;arr[0 ~ 254] = 0                         // 0 = 可能是質數，0xFF = 合數
+	;if seg0 != segm: arr[0 ~ idx0-1] = 0xFF  // 第一段裡 < n 的先標掉
+
+	// 3. 一段一段篩（segment / add_prime / cross_out）
+	;for seg = seg0 to segm:
+	;    for p in {3, 5, 7, 11, ..., 251}:    // ptab 一列一個質數
+	;        if p * p 在後面的段: break
+	;        if p 還沒加進 prm[]:
+	;            if p * p 在這一段: next[p] = p * p 的編號 % 255
+	;            else: next[p] = 這一段第一個 p 的奇數倍   // 只有第一段會發生，用乘法算，不用除法
+	;    for p in prm[]:
+	;        for x = next[p]; x < 255; x += p:    // 奇數倍之間差 2p，編號差 p
+	;            arr[x] = 0xFF
+	;        next[p] = x - 255                    // 下一段從這裡接著標，不用重找起點
+
+	// 4. 數這一段裡沒被標掉的（count）
+	;    if seg == segm:                          // 最後一段：只數到 m
+	;        lo = (seg == seg0) ? idx0 : 0
+	;        count += arr[lo ~ idxm] 裡 0 的個數   // 0xFF 加起來 = -(合數個數)
+	;        return count
+	;    count += arr[0 ~ 254] 裡 0 的個數         // < n 的在 2. 已經標掉了
+	;    arr[0 ~ 254] = 0                         // 清掉給下一段用
+    ;return count
+
 ; count_primes.S (short version) -- PIC18F4520, pic-as (XC8 v4.00)
 ;
 ;   extern unsigned int count_primes(unsigned int n, unsigned int m);
@@ -172,7 +210,7 @@ no_two:
     subwf   idxm, w, a
     bnc     done
 have_odd:
-    ; arr = all "maybe prime"
+    ; arr = all 00h (maybe prime)
     lfsr    0, arr+1
     movlw   255
     movwf   ctr, a
