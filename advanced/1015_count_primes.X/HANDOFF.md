@@ -3,7 +3,7 @@
 這個資料夾是 Lab 5（Mixing with C）Advanced 題。
 
 - `count_primes.S`：速度優化版，**已交 judge：AC，20 組總共 1,005,360 cycle，score 30**（2026-10-13 排行榜；參考程式約 1,000,000，速度 −0.53%）。全範圍單組約 14.6 萬 cycle，上一版約 2.4 億。程式大部分是產生器展開的重複程式碼，所以有 3700 多行。
-- `short/count_primes.S`：**同一個演算法的短版**（約 190 行指令），用迴圈代替展開，比較好讀；cycle 約是長版的 2 倍（全範圍 308,781），還沒交過 judge。想理解演算法請先看這個，見下方「短版」。
+- `short/count_primes.S`：**同一個演算法的短版**（約 190 行指令），用迴圈代替展開，比較好讀；cycle 約是長版的 2 倍（全範圍 308,542），還沒交過 judge。想理解演算法請先看這個，見下方「短版」。
 
 ## 題目
 
@@ -81,6 +81,7 @@ extern unsigned int count_primes(unsigned int n, unsigned int m);
 - `x += p`、`start += p` 都要檢查超過 65535。
 - （這一版）`arr` 必須剛好是整個 bank 1，才會對齊 256；不要在 `udata_bank1` 再放別的變數，也不要把 `arr` 改小。
 - （這一版）用 banked 定址的地方（`arr` 的計數、`nxt[]`）前面都有 `BANKSEL`；`seg_end` 計數前切到 `arr` 的 bank，回來前切回 `nxt` 的 bank。
+- （pic-as）`seg` 是保留字，拿來當變數名稱會在每一行用到它的地方出現 `error: (876) syntax error`。變數和標籤一律用 `cp_` 開頭，就不會撞到保留字、xc.inc 或 XC8 runtime 的名稱。gpasm 不會擋，所以 gpsim 測試抓不到這種錯。
 - （gpsim）gpasm 會把奇數個 byte 的 `DB` 行補一個 0，pic-as 不會；`gpsim_test.py` 會先把連續的 `DB` 行接起來（上一版的質數表第一行 19 個數，沒接起來會在 67 後面多一個 0）。
 
 ## 還可以再快的地方（效益都不大）
